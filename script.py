@@ -143,8 +143,8 @@ def run_process(cmd, timeout = 60):
     return (stdout_output.strip(), stderr_output.strip(), retcode, elapsed_time, did_timeout)
 
 def run_adb(command):
-    output, _, _, _, _ = run_process(adbpath + " " + command)
-    return output
+    stdout, stderr, _, _, _ = run_process(adbpath + " " + command)
+    return stdout + stderr
 
 
 # Takes pixels, return the x,y position of the ball
@@ -165,7 +165,7 @@ def find_ball(pix):
     sys.exit(1)
 
 # Takes pixels, return the x,y position of the target
-def find_target(img):
+def find_target(pix):
     width, height = get_screen_dim()
 
     # Approx target height 
@@ -205,6 +205,13 @@ def sample_ball_target(samples=sample_count, delay=0):
     return l
 
 
+def map_range(value, low1, high1, low2, high2):
+    return low2 + (high2 - low2) * (value - low1) / (high1 - low1)
+
+def scale_to_full_hd(x, y, small_width, small_height, big_width=1080, big_height=1920):
+    return map_range(x, 0, small_width, 0, big_width), map_range(y, 0, small_height, 0, big_height)
+
+
 
 
 ###################
@@ -227,13 +234,7 @@ else:
 # in the values above starting with screen_*.
 find_screen()
 
-img = capture_screen()
-img.save("test.png")
-pix = img.load()
-
-print find_ball(pix)
-print find_target(pix)
-
+width, height = get_screen_dim()
 
 while True:
     start_time = time.time()
@@ -258,10 +259,11 @@ while True:
 
     next_tx = tx2 + vx*end_time
 
-    print tx1, tx2, next_tx
+    # Calculate position in FullHD
+    new_bx, new_by = scale_to_full_hd(bx,by,width,height)
+    new_tx, new_ty = scale_to_full_hd(next_tx,ty,width,height)
 
-    # TODO: Scale to Full HD
-    print run_adb("shell input swipe %d %d %d %d" % (bx, by, next_tx, ty))
+    run_adb("shell input swipe %d %d %d %d" % (new_bx, new_by, new_tx, new_ty))
     time.sleep(1.3)
 
 
