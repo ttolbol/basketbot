@@ -127,6 +127,17 @@ def run_adb(command):
     return output
 
 
+# Takes pixels, return the x,y position of the ball
+def find_ball(pix):
+    # TODO
+    pass
+
+# Takes pixels, return the x,y position of the target
+def find_target(img):
+    # TODO
+    pass
+
+
 ###################
 #   Starts here   #
 ###################
@@ -148,23 +159,32 @@ else:
 find_screen()
 
 
-
 while True:
     startTime = time.time()
-    os.system(adbpath+" shell screencap -p /mnt/sdcard/sc.png")
+    #os.system(adbpath+" shell screencap -p /mnt/sdcard/sc.png")
+    im1 = capture_screen()
+    print "Screenshot 1"
     startTime2 = time.time()
-    os.system(adbpath+" shell screencap -p /mnt/sdcard/sc2.png")
-    os.system(adbpath+" pull /mnt/sdcard/sc.png")
-    os.system(adbpath+" pull /mnt/sdcard/sc2.png")
+    im2 = capture_screen()
+    print "Screenshot 2"
+    #os.system(adbpath+" shell screencap -p /mnt/sdcard/sc2.png")
+    #os.system(adbpath+" pull /mnt/sdcard/sc.png")
+    #os.system(adbpath+" pull /mnt/sdcard/sc2.png")
     #os.system(adbpath+" shell rm /mnt/sdcard/sc.png")
-    im = Image.open("sc.png")
-    pix = im.load()
+    #im = Image.open("sc.png")
+    pix = im1.load()
+
+    width  = im1.width
+    height = im1.height
+
+    approx_ball_height = height - 10
+    approx_target_height = 247
 
     #find ball
     bx = 0
     n = 0
-    for i in range(1080):
-        if np.average(pix[i,1764]) < 200:
+    for i in range(width):
+        if np.average(pix[i,approx_ball_height]) < 200:
             bx += i
             n += 1
     if n > 0:
@@ -173,22 +193,22 @@ while True:
     #find targets prev. position
     tx1 = 0
     n = 0
-    for i in range(1080):
-        if np.average(pix[i,734]) < 200:
+    for i in range(width):
+        if np.average(pix[i,approx_target_height]) < 200:
             tx1 += i
             n += 1
     if n > 0:
         tx1 = tx1/n
 
     #os.system(adbpath+" shell rm /mnt/sdcard/sc.png")
-    im = Image.open("sc2.png")
-    pix = im.load()
+    #im = Image.open("sc2.png")
+    pix = im2.load()
 
     #find targets new position
     tx2 = 0
     n = 0
-    for i in range(1080):
-        if np.average(pix[i,734]) < 200:
+    for i in range(width):
+        if np.average(pix[i,approx_target_height]) < 200:
             tx2 += i
             n += 1
     if n > 0:
@@ -219,5 +239,5 @@ while True:
         if tx2 < 140:
             tx2 = 140-(tx2-140)
 
-    os.system(adbpath+" shell input swipe "+str(bx)+" 1764 "+str(tx2)+" 734")
+    run_adb("shell input swipe "+str(bx)+" 1764 "+str(tx2)+" 734")
     time.sleep(1.3)
