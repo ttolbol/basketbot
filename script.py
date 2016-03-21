@@ -20,7 +20,7 @@ while True:
     os.system(adbpath+" pull /mnt/sdcard/sc.png")
     os.system(adbpath+" pull /mnt/sdcard/sc2.png")
     #os.system(adbpath+" shell rm /mnt/sdcard/sc.png")
-    im = Image.open("/home/thomas/Android/Sdk/sc.png")
+    im = Image.open("sc.png")
     pix = im.load()
 
     #find ball
@@ -44,7 +44,7 @@ while True:
         tx1 = tx1/n
 
     #os.system(adbpath+" shell rm /mnt/sdcard/sc.png")
-    im = Image.open("/home/thomas/Android/Sdk/sc2.png")
+    im = Image.open("sc2.png")
     pix = im.load()
 
     #find targets new position
