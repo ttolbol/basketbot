@@ -24,6 +24,9 @@ screen_botright_y = 0
 def get_screen_tuple():
     return (screen_topleft_x, screen_topleft_y, screen_botright_x, screen_botright_y)
 
+def get_screen_dim():
+    return (screen_botright_x - screen_topleft_x, screen_botright_y - screen_topleft_y)
+
 def find_screen():
     # Find the borders of the casted screen by going from the left, right, top and bottom
     # until something interesting happens.
@@ -129,13 +132,37 @@ def run_adb(command):
 
 # Takes pixels, return the x,y position of the ball
 def find_ball(pix):
-    # TODO
-    pass
+    width, height = get_screen_dim()
+
+    # Approx ball height 
+    y = height - 80
+
+    # Swipe left to right
+    for x in xrange(width):
+        r, g, b = pix[x,y]
+
+        if r == 255 and g == 150 and b == 48:
+            return x,y
+
+    print "Ball was not found."
+    sys.exit(1)
 
 # Takes pixels, return the x,y position of the target
 def find_target(img):
-    # TODO
-    pass
+    width, height = get_screen_dim()
+
+    # Approx target height 
+    y = 266
+
+    # Swipe left to right
+    for x in xrange(width):
+        r, g, b = pix[x,y]
+
+        if r == 255 and g == 38 and b == 18:
+            return x,y
+
+    print "Target was not found."
+    sys.exit(1)
 
 
 ###################
@@ -158,7 +185,14 @@ else:
 # in the values above starting with screen_*.
 find_screen()
 
+img = capture_screen()
+img.save("test.png")
+pix = img.load()
 
+print find_ball(pix)
+print find_target(pix)
+
+sys.exit(1)
 while True:
     startTime = time.time()
     #os.system(adbpath+" shell screencap -p /mnt/sdcard/sc.png")
