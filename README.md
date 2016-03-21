@@ -9,7 +9,7 @@ Can also be installed by `android-tools-adb`.
 Also install Python packages:
 
 ```
-sudo pip install -r requierments.txt
+sudo pip install -r requirements.txt
 ```
 
 Change the variable "adbpath" to your own path to ADB. 
