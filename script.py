@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 # Imports the monkeyrunner modules used by this program
 import sys
 import time
@@ -12,12 +14,74 @@ lag = 1.1
 
 adbpath = "adb"
 
+countdown_seconds = 3
+
+screen_topleft_x = 0
+screen_topleft_y = 0
+screen_botright_x = 0
+screen_botright_y = 0
+
+def get_screen_tuple():
+    return (screen_topleft_x, screen_topleft_y, screen_botright_x, screen_botright_y)
 
 def find_screen():
     # Find the borders of the casted screen by going from the left, right, top and bottom
     # until something interesting happens.
-    pass
+    global screen_topleft_x
+    global screen_topleft_y
+    global screen_botright_x
+    global screen_botright_y
 
+    print "Fullscreen the viewer. Starting in %d seconds..." % countdown_seconds
+    for i in xrange(countdown_seconds, 0, -1):
+        print i
+        time.sleep(1)
+    print "Starting..."
+    print
+
+    im = capture()
+    pix = im.load()
+
+    # Find left border
+    for x in xrange(10, im.width):
+        r, g, b = pix[x,im.height/2]
+        s = sum([r,g,b])
+        if s >= 243:
+            screen_topleft_x = x
+            break
+
+    # Find right border
+    for x in xrange(im.width-10, 0, -1):
+        r, g, b = pix[x,im.height/2]
+        s = sum([r,g,b])
+        if s >= 243:
+            screen_botright_x = x
+            break
+
+    # Find top border
+    for y in xrange(20, im.height):
+        r, g, b = pix[im.width/4,y]
+        s = sum([r,g,b])
+        if s >= 730: # We found the white screen
+            screen_topleft_y = y
+            break
+
+    # Find bottom border
+    for y in xrange(im.height-20, 0, -1):
+        r, g, b = pix[im.width/4,y]
+        s = sum([r,g,b])
+        if s >= 730: # We found the white screen
+            screen_botright_y = y
+            break
+
+
+    if abs(screen_topleft_x - screen_botright_x) < 50:
+        print "Very small width of screen. Try again."
+        find_screen()
+
+    if abs(screen_topleft_y - screen_botright_y) < 50:
+        print "Very small height of screen. Try again."
+        find_screen()
 
 def capture(x1=None, y1=None, x2=None, y2=None):
     if x1 and y1 and x2 and y2:
@@ -27,6 +91,9 @@ def capture(x1=None, y1=None, x2=None, y2=None):
     grab = pyscreenshot.grab(bbox=box)
     return grab
 
+def capture_screen():
+    return capture(screen_topleft_x,  screen_topleft_y,
+                   screen_botright_x, screen_botright_y)
 
 def run_process(cmd, timeout = 60):
     start_time = time.clock()
@@ -59,8 +126,28 @@ def run_adb(command):
     output, _, _, _, _ = run_process(adbpath + " " + command)
     return output
 
-print run_adb("devices")
-print "Connected!"
+
+###################
+#   Starts here   #
+###################
+
+devices = run_adb("devices")
+print devices
+
+tmp_split_devices = devices.split("\n")
+if len(tmp_split_devices) > 1 and "device" in tmp_split_devices[1]:
+    print "Connected!"
+    print
+else:
+    print "No device. Aborting."
+    sys.exit(1)
+
+# Find the streamed screen by scanning for bight color from each of the for sides.
+# If this doesn't work, simply comment this out and hardcode the approximate location
+# in the values above starting with screen_*.
+find_screen()
+
+
 
 while True:
     startTime = time.time()
