@@ -1,15 +1,65 @@
 # Imports the monkeyrunner modules used by this program
+import sys
 import time
 import os
 import png
 import numpy as np
 from PIL import Image
+import pyscreenshot
+import subprocess
 
 lag = 1.1
 
-adbpath = "/home/thomas/Android/Sdk/platform-tools/adb"
+adbpath = "adb"
 
-os.system(adbpath+" devices")
+
+def find_screen():
+    # Find the borders of the casted screen by going from the left, right, top and bottom
+    # until something interesting happens.
+    pass
+
+
+def capture(x1=None, y1=None, x2=None, y2=None):
+    if x1 and y1 and x2 and y2:
+        box = (x1, y1, x2, y2)
+    else:
+        box = None
+    grab = pyscreenshot.grab(bbox=box)
+    return grab
+
+
+def run_process(cmd, timeout = 60):
+    start_time = time.clock()
+
+    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, 
+                                      stderr=subprocess.PIPE)
+
+    stdout_output = ""
+    stderr_output = ""
+
+    did_timeout = False
+
+    while True:
+        retcode = p.poll() #returns None while subprocess is running
+        stdout_line = p.stdout.read()
+        stdout_output += stdout_line.decode("ascii")
+        stderr_line = p.stderr.read()
+        stderr_output += stderr_line.decode("ascii")
+        elapsed_time = time.clock() - start_time
+        if retcode is not None:
+            break
+        elif elapsed_time >= timeout:
+            p.terminate()
+            did_timeout = True
+            break
+
+    return (stdout_output.strip(), stderr_output.strip(), retcode, elapsed_time, did_timeout)
+
+def run_adb(command):
+    output, _, _, _, _ = run_process(adbpath + " " + command)
+    return output
+
+print run_adb("devices")
 print "Connected!"
 
 while True:
