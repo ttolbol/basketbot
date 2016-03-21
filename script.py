@@ -236,6 +236,8 @@ find_screen()
 
 width, height = get_screen_dim()
 
+# Tried my luck with a simplified event loop that uses the helper functions above
+"""
 while True:
     start_time = time.time()
 
@@ -266,8 +268,10 @@ while True:
     run_adb("shell input swipe %d %d %d %d" % (new_bx, new_by, new_tx, new_ty))
     time.sleep(1.3)
 
-
 sys.exit(1)
+"""
+
+
 while True:
     startTime = time.time()
     #os.system(adbpath+" shell screencap -p /mnt/sdcard/sc.png")
