@@ -16,10 +16,27 @@ adbpath = "adb"
 
 countdown_seconds = 3
 
+sample_count = 2
+
+approx_ball_height   = -80 # Plus height
+approx_target_height = 266
+
 screen_topleft_x = 0
 screen_topleft_y = 0
 screen_botright_x = 0
 screen_botright_y = 0
+
+class Snapshot:
+    def __init__(self, ball_pos, target_pos, timestamp):
+        self.ball_pos = ball_pos
+        self.target_pos = target_pos
+        self.timestamp = timestamp
+
+    def __str__(self):
+        return "%s, %s, %s" % (self.ball_pos, self.target_pos, self.timestamp)
+
+    def __repr__(self):
+        return str(self)
 
 def get_screen_tuple():
     return (screen_topleft_x, screen_topleft_y, screen_botright_x, screen_botright_y)
@@ -135,7 +152,7 @@ def find_ball(pix):
     width, height = get_screen_dim()
 
     # Approx ball height 
-    y = height - 80
+    y = height + approx_ball_height
 
     # Swipe left to right
     for x in xrange(width):
@@ -152,7 +169,7 @@ def find_target(img):
     width, height = get_screen_dim()
 
     # Approx target height 
-    y = 266
+    y = approx_target_height
 
     # Swipe left to right
     for x in xrange(width):
@@ -163,6 +180,31 @@ def find_target(img):
 
     print "Target was not found."
     sys.exit(1)
+
+def get_ball_target(pix):
+    return (find_ball(pix), find_target(pix))
+
+def sample_ball_target(samples=sample_count, delay=0):
+    l = []
+
+    start_time = time.time()
+
+    for i in range(samples):
+        screen_time = time.time()
+        img = capture_screen()
+        pix = img.load()
+
+        ball_pos, target_pos = get_ball_target(pix)
+
+        snapshot = Snapshot(ball_pos, target_pos, screen_time - start_time)
+        l.append(snapshot)
+
+        if delay:
+            time.sleep(delay)
+
+    return l
+
+
 
 
 ###################
@@ -191,6 +233,37 @@ pix = img.load()
 
 print find_ball(pix)
 print find_target(pix)
+
+
+while True:
+    start_time = time.time()
+
+    samples = sample_ball_target()
+
+    end_time = time.time()
+
+    sample1 = samples[0]
+    sample2 = samples[1]
+
+    bx  = sample1.ball_pos[0]
+    by  = sample1.ball_pos[1]
+
+    ty  = sample1.target_pos[1]
+    tx1 = sample1.target_pos[0]
+    tx2 = sample2.target_pos[0]
+
+    dt = sample2.timestamp - sample1.timestamp
+    dx = tx2 - tx2
+    vx = dx/dt
+
+    next_tx = tx2 + vx*end_time
+
+    print tx1, tx2, next_tx
+
+    # TODO: Scale to Full HD
+    print run_adb("shell input swipe %d %d %d %d" % (bx, by, next_tx, ty))
+    time.sleep(1.3)
+
 
 sys.exit(1)
 while True:
