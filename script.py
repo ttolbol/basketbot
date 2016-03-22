@@ -9,6 +9,7 @@ import numpy as np
 from PIL import Image
 import pyscreenshot
 import subprocess
+from geometry import *
 
 lag = 1.1
 
@@ -21,6 +22,8 @@ sample_count = 2
 approx_ball_height   = -80 # Plus height
 approx_target_height = 266
 
+# Init the screen to just 0's
+screen = Box(Point(0,0), Point(0,0))
 screen_topleft_x = 0
 screen_topleft_y = 0
 screen_botright_x = 0
@@ -38,19 +41,9 @@ class Snapshot:
     def __repr__(self):
         return str(self)
 
-def get_screen_tuple():
-    return (screen_topleft_x, screen_topleft_y, screen_botright_x, screen_botright_y)
-
-def get_screen_dim():
-    return (screen_botright_x - screen_topleft_x, screen_botright_y - screen_topleft_y)
-
 def find_screen():
     # Find the borders of the casted screen by going from the left, right, top and bottom
     # until something interesting happens.
-    global screen_topleft_x
-    global screen_topleft_y
-    global screen_botright_x
-    global screen_botright_y
 
     print "Fullscreen the viewer. Starting in %d seconds..." % countdown_seconds
     for i in xrange(countdown_seconds, 0, -1):
@@ -67,7 +60,7 @@ def find_screen():
         r, g, b = pix[x,im.height/2]
         s = sum([r,g,b])
         if s >= 243:
-            screen_topleft_x = x
+            screen.topleft.x = x
             break
 
     # Find right border
@@ -75,7 +68,7 @@ def find_screen():
         r, g, b = pix[x,im.height/2]
         s = sum([r,g,b])
         if s >= 243:
-            screen_botright_x = x
+            screen.botright.x = x
             break
 
     # Find top border
@@ -83,7 +76,7 @@ def find_screen():
         r, g, b = pix[im.width/4,y]
         s = sum([r,g,b])
         if s >= 730: # We found the white screen
-            screen_topleft_y = y
+            screen.topleft.y = y
             break
 
     # Find bottom border
@@ -91,29 +84,24 @@ def find_screen():
         r, g, b = pix[im.width/4,y]
         s = sum([r,g,b])
         if s >= 730: # We found the white screen
-            screen_botright_y = y
+            screen.botright.y = y
             break
 
 
-    if abs(screen_topleft_x - screen_botright_x) < 50:
+    if screen.width() < 50:
         print "Very small width of screen. Try again."
         find_screen()
 
-    if abs(screen_topleft_y - screen_botright_y) < 50:
+    if screen.height() < 50:
         print "Very small height of screen. Try again."
         find_screen()
 
-def capture(x1=None, y1=None, x2=None, y2=None):
-    if x1 and y1 and x2 and y2:
-        box = (x1, y1, x2, y2)
-    else:
-        box = None
+def capture(box=None):
     grab = pyscreenshot.grab(bbox=box)
     return grab
 
 def capture_screen():
-    return capture(screen_topleft_x,  screen_topleft_y,
-                   screen_botright_x, screen_botright_y)
+    return capture(screen.to_tuple())
 
 def run_process(cmd, timeout = 60):
     start_time = time.clock()
@@ -149,7 +137,7 @@ def run_adb(command):
 
 # Takes pixels, return the x,y position of the ball
 def find_ball(pix):
-    width, height = get_screen_dim()
+    width, height = screen.dim()
 
     # Approx ball height 
     y = height + approx_ball_height
@@ -159,14 +147,14 @@ def find_ball(pix):
         r, g, b = pix[x,y]
 
         if r == 255 and g == 150 and b == 48:
-            return x,y
+            return Point(x,y)
 
     print "Ball was not found."
     sys.exit(1)
 
 # Takes pixels, return the x,y position of the target
 def find_target(pix):
-    width, height = get_screen_dim()
+    width, height = screen.dim()
 
     # Approx target height 
     y = approx_target_height
@@ -176,7 +164,7 @@ def find_target(pix):
         r, g, b = pix[x,y]
 
         if r == 255 and g == 38 and b == 18:
-            return x,y
+            return Point(x,y)
 
     print "Target was not found."
     sys.exit(1)
@@ -234,10 +222,9 @@ else:
 # in the values above starting with screen_*.
 find_screen()
 
-width, height = get_screen_dim()
+width, height = screen.dim()
 
 # Tried my luck with a simplified event loop that uses the helper functions above
-"""
 while True:
     start_time = time.time()
 
@@ -248,12 +235,12 @@ while True:
     sample1 = samples[0]
     sample2 = samples[1]
 
-    bx  = sample1.ball_pos[0]
-    by  = sample1.ball_pos[1]
+    bx  = sample1.ball_pos.x
+    by  = sample1.ball_pos.y
 
-    ty  = sample1.target_pos[1]
-    tx1 = sample1.target_pos[0]
-    tx2 = sample2.target_pos[0]
+    ty  = sample1.target_pos.y
+    tx1 = sample1.target_pos.x
+    tx2 = sample2.target_pos.x
 
     dt = sample2.timestamp - sample1.timestamp
     dx = tx2 - tx2
@@ -269,7 +256,6 @@ while True:
     time.sleep(1.3)
 
 sys.exit(1)
-"""
 
 
 while True:
