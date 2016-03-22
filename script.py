@@ -24,10 +24,6 @@ approx_target_height = 266
 
 # Init the screen to just 0's
 screen = Box(Point(0,0), Point(0,0))
-screen_topleft_x = 0
-screen_topleft_y = 0
-screen_botright_x = 0
-screen_botright_y = 0
 
 class Snapshot:
     def __init__(self, ball_pos, target_pos, timestamp):
@@ -210,7 +206,7 @@ devices = run_adb("devices")
 print devices
 
 tmp_split_devices = devices.split("\n")
-if len(tmp_split_devices) > 1 and "device" in tmp_split_devices[1]:
+if len(tmp_split_devices) > 1 and sum(["device" in s for s in tmp_split_devices[1:]]) > 0:
     print "Connected!"
     print
 else:
