@@ -135,35 +135,56 @@ def run_adb(command):
 def find_ball(pix):
     width, height = screen.dim()
 
-    # Approx ball height 
-    y = height + approx_ball_height
+    # We will only search inside this
+    search_box = Box(Point(0,0), Point(width, height))
 
-    # Swipe left to right
-    for x in xrange(width):
-        r, g, b = pix[x,y]
+    centroid = Point(0,0)
+    n = 0
 
-        if r == 255 and g == 150 and b == 48:
-            return Point(x,y)
+    for x in range(search_box.topleft.x, search_box.botright.x):
+        for y in range(search_box.topleft.y, search_box.botright.y):
+            r, g, b = pix[x,y]
 
-    print "Ball was not found."
-    sys.exit(1)
+            if r == 255 and g == 150 and b == 48:
+                new_p = Point(x,y)
+                centroid += new_p
+                n += 1
+
+    if n > 0:
+        centroid /= n
+    else:
+        print "Ball was not found."
+        sys.exit(1)
+
+    return centroid
 
 # Takes pixels, return the x,y position of the target
 def find_target(pix):
     width, height = screen.dim()
 
-    # Approx target height 
-    y = approx_target_height
+    # We will only search inside this
+    search_box = Box(Point(0,0), Point(width, height))
 
-    # Swipe left to right
-    for x in xrange(width):
-        r, g, b = pix[x,y]
+    centroid = Point(0,0)
+    n = 0
 
-        if r == 255 and g == 38 and b == 18:
-            return Point(x,y)
+    for x in range(search_box.topleft.x, search_box.botright.x):
+        for y in range(search_box.topleft.y, search_box.botright.y):
+            r, g, b = pix[x,y]
 
-    print "Target was not found."
-    sys.exit(1)
+            if r == 255 and g == 38 and b == 18:
+                new_p = Point(x,y)
+                centroid += new_p
+                n += 1
+
+    if n > 0:
+        centroid /= n
+    else:
+        print "Target was not found."
+        sys.exit(1)
+
+    return centroid
+
 
 def get_ball_target(pix):
     return (find_ball(pix), find_target(pix))
