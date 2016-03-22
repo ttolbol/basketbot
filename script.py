@@ -11,6 +11,7 @@ import pyscreenshot
 import subprocess
 from geometry import *
 
+# Constants
 lag = 1.1
 
 adbpath = "adb"
@@ -19,14 +20,14 @@ countdown_seconds = 3
 
 sample_count = 2
 
-approx_ball_height   = -80 # Plus height
-approx_target_height = 266
-
 time_until_next_shot = 1.3
 
 # Init the screen to just 0's
+# (A box has a topleft point and a bottom right point)
 screen = Box(Point(0,0), Point(0,0))
 
+# A snapshot of the current scene
+# It has a ball point, a target point and a timestamp since we started the current sampling
 class Snapshot:
     def __init__(self, ball_pos, target_pos, timestamp):
         self.ball_pos = ball_pos
@@ -39,21 +40,26 @@ class Snapshot:
     def __repr__(self):
         return str(self)
 
+# Locate the phone stream on the screen
 def find_screen():
     # Find the borders of the casted screen by going from the left, right, top and bottom
     # until something interesting happens.
+
+    # Make a countdown so the user can set stream viewer in fullscreen.
 
     print "Fullscreen the viewer. Starting in %d seconds..." % countdown_seconds
     for i in xrange(countdown_seconds, 0, -1):
         print i
         time.sleep(1)
-    print "Starting..."
+    print "Finding screen..."
     print
 
+    # Take screen shot of the entire screen and analyse it
     im = capture()
     pix = im.load()
 
     # Find left border
+    # This scan starts from the y-mid of the screen and goes from x = 0 to max.
     for x in xrange(10, im.width):
         r, g, b = pix[x,im.height/2]
         s = sum([r,g,b])
@@ -62,6 +68,7 @@ def find_screen():
             break
 
     # Find right border
+    # This scan starts from the y-mid of the screen and goes from x = max to 0.
     for x in xrange(im.width-10, 0, -1):
         r, g, b = pix[x,im.height/2]
         s = sum([r,g,b])
@@ -70,6 +77,7 @@ def find_screen():
             break
 
     # Find top border
+    # This scan starts from the x-quarter of the screen and goes from y = 0 to max.
     for y in xrange(20, im.height):
         r, g, b = pix[im.width/4,y]
         s = sum([r,g,b])
@@ -78,6 +86,7 @@ def find_screen():
             break
 
     # Find bottom border
+    # This scan starts from the x-quarter of the screen and goes from y = max to 0.
     for y in xrange(im.height-20, 0, -1):
         r, g, b = pix[im.width/4,y]
         s = sum([r,g,b])
@@ -85,22 +94,28 @@ def find_screen():
             screen.botright.y = y
             break
 
+    # If the found dimensions are weird (too small), we try again
 
     if screen.width() < 50:
         print "Very small width of screen. Try again."
         find_screen()
+        return
 
     if screen.height() < 50:
         print "Very small height of screen. Try again."
         find_screen()
+        return
 
+# Take a screenshot of Box of the screen or if not specified, the entire screen.
 def capture(box=None):
     grab = pyscreenshot.grab(bbox=box)
     return grab
 
+# Use the found screen to only capture that part of the screen
 def capture_screen():
     return capture(screen.to_tuple())
 
+# Execute a shell command
 def run_process(cmd, timeout = 60):
     start_time = time.clock()
 
@@ -112,6 +127,8 @@ def run_process(cmd, timeout = 60):
 
     did_timeout = False
 
+    # Keep asking if the process has ended
+    # and every time, store the new stdout and stderr output to strings.
     while True:
         retcode = p.poll() #returns None while subprocess is running
         stdout_line = p.stdout.read()
@@ -128,11 +145,13 @@ def run_process(cmd, timeout = 60):
 
     return (stdout_output.strip(), stderr_output.strip(), retcode, elapsed_time, did_timeout)
 
+# Run ADB with some command
 def run_adb(command):
     stdout, stderr, _, _, _ = run_process(adbpath + " " + command)
     return stdout + stderr
 
 
+# Find the ball on the screen
 # Takes pixels, return the x,y position of the ball
 def find_ball(pix):
     width, height = screen.dim()
@@ -140,9 +159,12 @@ def find_ball(pix):
     # We will only search inside this
     search_box = Box(Point(0,0), Point(width, height))
 
+    # The average of all the points that we are looking for.
     centroid = Point(0,0)
     n = 0
 
+    # Go through all pixels and search for a specific color.
+    # If the color is found, make it part of the centroid.
     for x in range(search_box.topleft.x, search_box.botright.x):
         for y in range(search_box.topleft.y, search_box.botright.y):
             r, g, b = pix[x,y]
@@ -152,6 +174,7 @@ def find_ball(pix):
                 centroid += new_p
                 n += 1
 
+    # Finally, take the average or report an error and stop.
     if n > 0:
         centroid /= n
     else:
@@ -160,6 +183,7 @@ def find_ball(pix):
 
     return centroid
 
+# Find the target on the screen
 # Takes pixels, return the x,y position of the target
 def find_target(pix):
     width, height = screen.dim()
@@ -167,9 +191,12 @@ def find_target(pix):
     # We will only search inside this
     search_box = Box(Point(0,0), Point(width, height))
 
+    # The average of all the points that we are looking for.
     centroid = Point(0,0)
     n = 0
 
+    # Go through all pixels and search for a specific color.
+    # If the color is found, make it part of the centroid.
     for x in range(search_box.topleft.x, search_box.botright.x):
         for y in range(search_box.topleft.y, search_box.botright.y):
             r, g, b = pix[x,y]
@@ -179,6 +206,7 @@ def find_target(pix):
                 centroid += new_p
                 n += 1
 
+    # Finally, take the average or report an error and stop.
     if n > 0:
         centroid /= n
     else:
@@ -187,10 +215,11 @@ def find_target(pix):
 
     return centroid
 
-
+# Combine the result of the find_ball and find_target
 def get_ball_target(pix):
     return (find_ball(pix), find_target(pix))
 
+# Take snapshots of the scene and return a list of them
 def sample_ball_target(samples=sample_count, delay=0):
     l = []
 
@@ -214,9 +243,11 @@ def sample_ball_target(samples=sample_count, delay=0):
     return l
 
 
+# Similar to the map function in Processing
 def map_range(value, low1, high1, low2, high2):
     return low2 + (high2 - low2) * (value - low1) / (high1 - low1)
 
+# Use the map_range to scale coordinates to FullHD
 def scale_to_full_hd(x, y, small_width=None, small_height=None, big_width=1080, big_height=1920):
     if small_width is None:
         small_width = screen.width()
@@ -234,6 +265,8 @@ def scale_to_full_hd(x, y, small_width=None, small_height=None, big_width=1080, 
 devices = run_adb("devices")
 print devices
 
+# Determine if a device is connected.
+# Stop in none.
 tmp_split_devices = devices.split("\n")
 if len(tmp_split_devices) > 1 and sum(["device" in s for s in tmp_split_devices[1:]]) > 0:
     print "Connected!"
@@ -243,8 +276,7 @@ else:
     sys.exit(1)
 
 # Find the streamed screen by scanning for bight color from each of the for sides.
-# If this doesn't work, simply comment this out and hardcode the approximate location
-# in the values above starting with screen_*.
+# If this doesn't work, simply comment this out and hardcode the approximate location.
 find_screen()
 
 width, height = screen.dim()
@@ -254,10 +286,12 @@ while True:
     print "Gathering information for shot."
     start_time = time.time()
 
+    # Take some snapshots of the scene
     samples = sample_ball_target()
 
     end_time = time.time()
 
+    # Extract values
     sample1 = samples[0]
     sample2 = samples[1]
 
@@ -276,7 +310,7 @@ while True:
 
     print "dt = ", dt, ", dx = ", dx, ", vx = ", vx
 
-    # Do proper prediction here
+    # TODO: Do proper prediction here
     next_tx = tx2 + vx*dt
 
     print "tx1 = ", tx1, ", tx2 = ", tx2, ", next_tx = ", next_tx
@@ -294,9 +328,11 @@ while True:
 
     print # Just a newline
 
+# Stop here, so we can't enter the loop below.
 sys.exit(1)
 
 
+# Old event loop
 while True:
     startTime = time.time()
     #os.system(adbpath+" shell screencap -p /mnt/sdcard/sc.png")
