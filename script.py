@@ -22,6 +22,8 @@ sample_count = 2
 approx_ball_height   = -80 # Plus height
 approx_target_height = 266
 
+time_until_next_shot = 1.3
+
 # Init the screen to just 0's
 screen = Box(Point(0,0), Point(0,0))
 
@@ -215,7 +217,11 @@ def sample_ball_target(samples=sample_count, delay=0):
 def map_range(value, low1, high1, low2, high2):
     return low2 + (high2 - low2) * (value - low1) / (high1 - low1)
 
-def scale_to_full_hd(x, y, small_width, small_height, big_width=1080, big_height=1920):
+def scale_to_full_hd(x, y, small_width=None, small_height=None, big_width=1080, big_height=1920):
+    if small_width is None:
+        small_width = screen.width()
+    if small_height is None:
+        small_height = screen.height()
     return map_range(x, 0, small_width, 0, big_width), map_range(y, 0, small_height, 0, big_height)
 
 
@@ -266,21 +272,25 @@ while True:
     dx = tx2 - tx1
     vx = dx/dt
 
+    #ball_speed = ...
+
     print "dt = ", dt, ", dx = ", dx, ", vx = ", vx
 
+    # Do proper prediction here
     next_tx = tx2 + vx*dt
 
     print "tx1 = ", tx1, ", tx2 = ", tx2, ", next_tx = ", next_tx
 
+
     # Calculate position in FullHD
-    new_bx, new_by = scale_to_full_hd(bx,by,width,height)
-    new_tx, new_ty = scale_to_full_hd(next_tx,ty,width,height)
+    new_bx, new_by = scale_to_full_hd(bx,by)
+    new_tx, new_ty = scale_to_full_hd(next_tx,ty)
 
     print "Shoot!"
 
     run_adb("shell input swipe %d %d %d %d" % (new_bx, new_by, new_tx, new_ty))
 
-    time.sleep(1.3)
+    time.sleep(time_until_next_shot)
 
     print # Just a newline
 
