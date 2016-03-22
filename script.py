@@ -202,6 +202,8 @@ def sample_ball_target(samples=sample_count, delay=0):
         ball_pos, target_pos = get_ball_target(pix)
 
         snapshot = Snapshot(ball_pos, target_pos, screen_time - start_time)
+        print "Snapshot %d: %s" % (i+1, snapshot)
+
         l.append(snapshot)
 
         if delay:
@@ -243,6 +245,7 @@ width, height = screen.dim()
 
 # Tried my luck with a simplified event loop that uses the helper functions above
 while True:
+    print "Gathering information for shot."
     start_time = time.time()
 
     samples = sample_ball_target()
@@ -260,17 +263,26 @@ while True:
     tx2 = sample2.target_pos.x
 
     dt = sample2.timestamp - sample1.timestamp
-    dx = tx2 - tx2
+    dx = tx2 - tx1
     vx = dx/dt
 
-    next_tx = tx2 + vx*end_time
+    print "dt = ", dt, ", dx = ", dx, ", vx = ", vx
+
+    next_tx = tx2 + vx*dt
+
+    print "tx1 = ", tx1, ", tx2 = ", tx2, ", next_tx = ", next_tx
 
     # Calculate position in FullHD
     new_bx, new_by = scale_to_full_hd(bx,by,width,height)
     new_tx, new_ty = scale_to_full_hd(next_tx,ty,width,height)
 
+    print "Shoot!"
+
     run_adb("shell input swipe %d %d %d %d" % (new_bx, new_by, new_tx, new_ty))
+
     time.sleep(1.3)
+
+    print # Just a newline
 
 sys.exit(1)
 
