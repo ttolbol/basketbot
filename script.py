@@ -18,7 +18,7 @@ lag = 1.1
 #adbpath = "/home/thomas/Android/Sdk/platform-tools/adb"
 adbpath = "adb"
 
-countdown_seconds = 1
+countdown_seconds = 0
 
 sample_count = 2
 
@@ -300,12 +300,15 @@ find_screen()
 
 width, height = screen.dim()
 
+can_shoot = False
+
 scaling_factor = width/1080.0
 
 ball_pos   = None
 target_pos = None
 
 now = time.time()
+last_shot = 0
 
 counter = 0
 
@@ -321,6 +324,11 @@ while True:
     prev_target_pos = target_pos
 
     pix = capture_screen()
+
+    # Save each screenshot to file
+    pix.save("images/test%09d.png" % counter)
+    counter += 1
+
     ball_pos, target_pos = get_ball_target(pix)
 
     if not ball_pos:
@@ -333,6 +341,12 @@ while True:
 
     if not prev_ball_pos or not prev_target_pos:
         # Skip the first iteration to get us going
+        continue
+
+    if now - last_shot > 0.5:
+        can_shoot = True
+
+    if not can_shoot:
         continue
 
     # --- Do prediction ---
@@ -371,6 +385,7 @@ while True:
     basket_width = scaling_factor * 280
     bw2 = basket_width / 2 
 
+    """
     while pred_target_x+bw2 > width or pred_target_x-bw2 < 0:
         if pred_target_x+bw2 > width:
             print "To right"
@@ -381,6 +396,7 @@ while True:
             print "To left"
             a = pred_target_x-bw2
             pred_target_x += a
+    """
 
     # Calculate position in FullHD
     new_bx, new_by = scale_to_full_hd(bx,by)
@@ -390,11 +406,9 @@ while True:
 
     run_adb("shell input swipe %d %d %d %d" % (new_bx, new_by, new_tx, new_ty))
 
-    # Save each screenshot to file
-    pix.save("images/test%d.png" % counter)
-    counter += 1
-
-    time.sleep(time_until_next_shot)
+    #time.sleep(time_until_next_shot)
+    can_shoot = False
+    last_shot = time.time()
 
     print # Just a newline
 
