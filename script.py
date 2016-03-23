@@ -188,12 +188,10 @@ def find_ball(pix):
                 centroid += new_p
                 n += 1
 
-    print n
     # Finally, take the average or report an error and stop.
     if n > 100:
         centroid /= n
     else:
-        print "Ball was not found."
         return
 
     return centroid
@@ -227,7 +225,6 @@ def find_target(pix):
     if n > 0:
         centroid /= n
     else:
-        print "Target was not found."
         return
 
     return centroid
@@ -303,51 +300,96 @@ find_screen()
 
 width, height = screen.dim()
 
+scaling_factor = width/1080.0
+
+ball_pos   = None
+target_pos = None
+
+now = time.time()
+
+counter = 0
+
 # Tried my luck with a simplified event loop that uses the helper functions above
 while True:
-    print "Gathering information for shot."
-    start_time = time.time()
+    #print "(Gathering information for shot.)"
 
-    # Take some snapshots of the scene
-    samples = sample_ball_target()
+    # Update values between iterations
+    last_time = now
+    now       = time.time()
 
-    if not samples:
+    prev_ball_pos   = ball_pos
+    prev_target_pos = target_pos
+
+    pix = capture_screen()
+    ball_pos, target_pos = get_ball_target(pix)
+
+    if not ball_pos:
+        #print "Ball was not found."
         continue
 
-    end_time = time.time()
+    if not target_pos:
+        #print "Target was not found."
+        continue
 
-    # Extract values
-    sample1 = samples[0]
-    sample2 = samples[1]
+    if not prev_ball_pos or not prev_target_pos:
+        # Skip the first iteration to get us going
+        continue
 
-    bx  = sample1.ball_pos.x
-    by  = sample1.ball_pos.y
+    # --- Do prediction ---
 
-    ty  = sample1.target_pos.y
-    tx1 = sample1.target_pos.x
-    tx2 = sample2.target_pos.x
+    #print ball_pos, prev_ball_pos
+    #print target_pos, prev_target_pos
 
-    dt = sample2.timestamp - sample1.timestamp
+    delay = 0.5
+
+    bx  = ball_pos.x
+    by  = ball_pos.y
+
+    ty  = target_pos.y
+    tx1 = prev_target_pos.x
+    tx2 = target_pos.x
+
+    dt = now - last_time
     dx = tx2 - tx1
     vx = dx/dt
 
-    #ball_speed = ...
+    if dx > 0.1:
+        vx = (220 * (dx/abs(dx))) * scaling_factor
+    else:
+        vx = 0
 
-    print "dt = ", dt, ", dx = ", dx, ", vx = ", vx
+    scaled_vx = (1/scaling_factor) * vx
 
-    # TODO: Do proper prediction here
-    next_tx = tx2 + vx*dt
+    print "vx = ", vx
+    print "scaled vx = ", scaled_vx
 
-    print "tx1 = ", tx1, ", tx2 = ", tx2, ", next_tx = ", next_tx
+    pred_target_x = target_pos.x + vx*delay
 
+    basket_width = scaling_factor * 280
+    bw2 = basket_width / 2 
+
+    while pred_target_x+bw2 > width or pred_target_x-bw2 < 0:
+        if pred_target_x+bw2 > width:
+            print "To right"
+            a = pred_target_x + bw2 - width
+            pred_target_x -= a
+
+        if pred_target_x-bw2 < 0:
+            print "To left"
+            a =  pred_target_x-bw2
+            pred_target_x += a
 
     # Calculate position in FullHD
     new_bx, new_by = scale_to_full_hd(bx,by)
-    new_tx, new_ty = scale_to_full_hd(next_tx,ty)
+    new_tx, new_ty = scale_to_full_hd(pred_target_x,ty)
 
     print "Shoot!"
 
     run_adb("shell input swipe %d %d %d %d" % (new_bx, new_by, new_tx, new_ty))
+
+    # Save each screenshot to file
+    pix.save("images/test%d.png" % counter)
+    counter += 1
 
     time.sleep(time_until_next_shot)
 
