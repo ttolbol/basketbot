@@ -188,12 +188,13 @@ def find_ball(pix):
                 centroid += new_p
                 n += 1
 
+    print n
     # Finally, take the average or report an error and stop.
-    if n > 0:
+    if n > 100:
         centroid /= n
     else:
         print "Ball was not found."
-        sys.exit(1)
+        return
 
     return centroid
 
@@ -227,7 +228,7 @@ def find_target(pix):
         centroid /= n
     else:
         print "Target was not found."
-        sys.exit(1)
+        return
 
     return centroid
 
@@ -246,6 +247,12 @@ def sample_ball_target(samples=sample_count, delay=0):
         pix = capture_screen()
 
         ball_pos, target_pos = get_ball_target(pix)
+
+        if not ball_pos:
+            return
+
+        if not target_pos:
+            return
 
         snapshot = Snapshot(ball_pos, target_pos, screen_time - start_time)
         print "Snapshot %d: %s" % (i+1, snapshot)
@@ -303,6 +310,9 @@ while True:
 
     # Take some snapshots of the scene
     samples = sample_ball_target()
+
+    if not samples:
+        continue
 
     end_time = time.time()
 
