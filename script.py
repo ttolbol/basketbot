@@ -167,8 +167,11 @@ def run_adb(command):
 def find_ball(pix):
     width, height = screen.dim()
 
+    p = 1764.0/1920
+    approx_y = screen.topleft.y + int(round(height*p))
+
     # We will only search inside this
-    search_box = Box(Point(0,0), Point(width, height))
+    search_box = Box(Point(0,approx_y), Point(width, approx_y+1))
 
     # The average of all the points that we are looking for.
     centroid = Point(0,0)
@@ -180,7 +183,7 @@ def find_ball(pix):
         for y in range(search_box.topleft.y, search_box.botright.y):
             r, g, b = get_pixel(pix, x, y)
 
-            if r == 255 and g == 150 and b == 48:
+            if np.average((r,g,b)) < 200:
                 new_p = Point(x,y)
                 centroid += new_p
                 n += 1
@@ -199,25 +202,25 @@ def find_ball(pix):
 def find_target(pix):
     width, height = screen.dim()
 
+    target_color = (255, 39, 18)
+
+    p = 734.0/1920
+    approx_y = screen.topleft.y + int(round(height*p))
+
     # We will only search inside this
-    search_box = Box(Point(0,0), Point(width, height))
+    search_box = Box(Point(0,approx_y-20), Point(width, approx_y))
 
     # The average of all the points that we are looking for.
     centroid = Point(0,0)
     n = 0
 
-    p = 734.0/1920
-
-    target_color = (255, 39, 18)
-
-    y = screen.topleft.y + int(round(height*p))
-
     for x in xrange(search_box.topleft.x, search_box.botright.x):
-        r, g, b = get_pixel(pix, x, y)
-        if color_distance((r,g,b), target_color) < 10:
-            new_p = Point(x,y)
-            centroid += new_p
-            n += 1
+        for y in xrange(search_box.topleft.y, search_box.botright.y):
+            r, g, b = get_pixel(pix, x, y)
+            if color_distance((r,g,b), target_color) < 10:
+                new_p = Point(x,y)
+                centroid += new_p
+                n += 1
 
     # Finally, take the average or report an error and stop.
     if n > 0:
