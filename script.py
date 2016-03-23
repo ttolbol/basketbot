@@ -340,7 +340,7 @@ while True:
     #print ball_pos, prev_ball_pos
     #print target_pos, prev_target_pos
 
-    delay = 0.5
+    delay = 1.0
 
     bx  = ball_pos.x
     by  = ball_pos.y
@@ -353,15 +353,18 @@ while True:
     dx = tx2 - tx1
     vx = dx/dt
 
-    if dx > 0.1:
+    #print prev_target_pos.x, target_pos.x
+    #print dx
+
+    if abs(dx) > 1:
         vx = (220 * (dx/abs(dx))) * scaling_factor
     else:
         vx = 0
 
     scaled_vx = (1/scaling_factor) * vx
 
-    print "vx = ", vx
-    print "scaled vx = ", scaled_vx
+    #print "vx = ", vx
+    #print "scaled vx = ", scaled_vx
 
     pred_target_x = target_pos.x + vx*delay
 
@@ -376,7 +379,7 @@ while True:
 
         if pred_target_x-bw2 < 0:
             print "To left"
-            a =  pred_target_x-bw2
+            a = pred_target_x-bw2
             pred_target_x += a
 
     # Calculate position in FullHD
