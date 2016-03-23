@@ -45,8 +45,8 @@ def color_distance(c1, c2):
     rdif = abs(c1[0]-c2[0])
     gdif = abs(c1[1]-c2[1])
     bdif = abs(c1[2]-c2[2])
-    dist = rdif+gdif+bdif
-    dist = dist/3.0
+    dist = rdif*rdif+gdif*gdif+bdif*bdif
+    dist = math.sqrt(dist)
     return dist
 
 
