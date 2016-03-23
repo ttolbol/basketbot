@@ -16,7 +16,7 @@ lag = 1.1
 
 adbpath = "adb"
 
-countdown_seconds = 3
+countdown_seconds = 1
 
 sample_count = 2
 
@@ -195,16 +195,16 @@ def find_target(pix):
     centroid = Point(0,0)
     n = 0
 
-    # Go through all pixels and search for a specific color.
-    # If the color is found, make it part of the centroid.
-    for x in range(search_box.topleft.x, search_box.botright.x):
-        for y in range(search_box.topleft.y, search_box.botright.y):
-            r, g, b = get_pixel(pix, x, y)
+    p = 734.0/1920
 
-            if r == 255 and g == 38 and b == 18:
-                new_p = Point(x,y)
-                centroid += new_p
-                n += 1
+    y = screen.topleft.y + int(round(height*p))
+
+    for x in xrange(search_box.topleft.x, search_box.botright.x):
+        r, g, b = get_pixel(pix, x, y)
+        if r < 240: # Insert better check here
+            new_p = Point(x,y)
+            centroid += new_p
+            n += 1
 
     # Finally, take the average or report an error and stop.
     if n > 0:
