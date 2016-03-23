@@ -6,6 +6,7 @@ import time
 import os
 import png
 import numpy as np
+import math
 from PIL import Image
 import subprocess
 from geometry import *
@@ -14,7 +15,7 @@ import autopy
 # Constants
 lag = 1.1
 
-adbpath = "adb"
+adbpath = "/home/thomas/Android/Sdk/platform-tools/adb"
 
 countdown_seconds = 1
 
@@ -39,6 +40,15 @@ class Snapshot:
 
     def __repr__(self):
         return str(self)
+
+def color_distance(c1, c2):
+    rdif = abs(c1[0]-c2[0])
+    gdif = abs(c1[1]-c2[1])
+    bdif = abs(c1[2]-c2[2])
+    dist = rdif+gdif+bdif
+    dist = dist/3.0
+    return dist
+
 
 # Locate the phone stream on the screen
 def find_screen():
@@ -119,7 +129,7 @@ def capture_screen():
 def run_process(cmd, timeout = 60):
     start_time = time.clock()
 
-    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, 
+    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE)
 
     stdout_output = ""
@@ -260,6 +270,8 @@ def scale_to_full_hd(x, y, small_width=None, small_height=None, big_width=1080, 
 ###################
 #   Starts here   #
 ###################
+
+print color_distance(c1, c2)
 
 devices = run_adb("devices")
 print devices
