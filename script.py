@@ -15,7 +15,8 @@ import autopy
 # Constants
 lag = 1.1
 
-adbpath = "/home/thomas/Android/Sdk/platform-tools/adb"
+#adbpath = "/home/thomas/Android/Sdk/platform-tools/adb"
+adbpath = "adb"
 
 countdown_seconds = 1
 
@@ -207,11 +208,13 @@ def find_target(pix):
 
     p = 734.0/1920
 
+    target_color = (255, 39, 18)
+
     y = screen.topleft.y + int(round(height*p))
 
     for x in xrange(search_box.topleft.x, search_box.botright.x):
         r, g, b = get_pixel(pix, x, y)
-        if r < 240: # Insert better check here
+        if color_distance((r,g,b), target_color) < 10:
             new_p = Point(x,y)
             centroid += new_p
             n += 1
@@ -270,8 +273,6 @@ def scale_to_full_hd(x, y, small_width=None, small_height=None, big_width=1080, 
 ###################
 #   Starts here   #
 ###################
-
-print color_distance(c1, c2)
 
 devices = run_adb("devices")
 print devices
