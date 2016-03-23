@@ -360,7 +360,7 @@ while True:
     #print ball_pos, prev_ball_pos
     #print target_pos, prev_target_pos
 
-    delay = 0.7
+    delay = 1.5
 
     bx  = ball_pos.x
     by  = ball_pos.y
@@ -391,16 +391,23 @@ while True:
     basket_width = scaling_factor * 280
     bw2 = basket_width / 2 
 
+    print basket_width
+
     if pred_target_x+bw2 > width:
         print "To right"
-        a = pred_target_x + bw2 - width
-        pred_target_x -= a
+        pred_target_x = (width - bw2) - (pred_target_x - (width-bw2))
 
     if pred_target_x-bw2 < 0:
         print "To left"
-        a = -(pred_target_x-bw2)
-        pred_target_x += a
+        pred_target_x = bw2-(pred_target_x - bw2)
 
+
+    while tx2 > 940 or tx2 < 140:
+        if tx2 > 940:
+            tx2 = 940-(tx2-940)
+
+        if tx2 < 140:
+            tx2 = 140-(tx2-140)
     # Calculate position in FullHD
     new_bx, new_by = scale_to_full_hd(bx,by)
     new_tx, new_ty = scale_to_full_hd(pred_target_x,ty)
