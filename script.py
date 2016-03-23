@@ -7,9 +7,9 @@ import os
 import png
 import numpy as np
 from PIL import Image
-import pyscreenshot
 import subprocess
 from geometry import *
+import autopy
 
 # Constants
 lag = 1.1
@@ -55,13 +55,12 @@ def find_screen():
     print
 
     # Take screen shot of the entire screen and analyse it
-    im = capture()
-    pix = im.load()
+    pix = capture()
 
     # Find left border
     # This scan starts from the y-mid of the screen and goes from x = 0 to max.
-    for x in xrange(10, im.width):
-        r, g, b = pix[x,im.height/2]
+    for x in xrange(10, pix.width):
+        r, g, b = get_pixel(pix, x, pix.height/2)
         s = sum([r,g,b])
         if s >= 243:
             screen.topleft.x = x
@@ -69,8 +68,8 @@ def find_screen():
 
     # Find right border
     # This scan starts from the y-mid of the screen and goes from x = max to 0.
-    for x in xrange(im.width-10, 0, -1):
-        r, g, b = pix[x,im.height/2]
+    for x in xrange(pix.width-10, 0, -1):
+        r, g, b = get_pixel(pix, x,pix.height/2)
         s = sum([r,g,b])
         if s >= 243:
             screen.botright.x = x
@@ -78,8 +77,8 @@ def find_screen():
 
     # Find top border
     # This scan starts from the x-quarter of the screen and goes from y = 0 to max.
-    for y in xrange(20, im.height):
-        r, g, b = pix[im.width/4,y]
+    for y in xrange(20, pix.height):
+        r, g, b = get_pixel(pix, pix.width/4, y)
         s = sum([r,g,b])
         if s >= 730: # We found the white screen
             screen.topleft.y = y
@@ -87,8 +86,8 @@ def find_screen():
 
     # Find bottom border
     # This scan starts from the x-quarter of the screen and goes from y = max to 0.
-    for y in xrange(im.height-20, 0, -1):
-        r, g, b = pix[im.width/4,y]
+    for y in xrange(pix.height-20, 0, -1):
+        r, g, b = get_pixel(pix, pix.width/4,y)
         s = sum([r,g,b])
         if s >= 730: # We found the white screen
             screen.botright.y = y
@@ -106,10 +105,18 @@ def find_screen():
         find_screen()
         return
 
+def get_pixel(pix, x, y):
+    return autopy.color.hex_to_rgb(pix.get_color(x,y))
+
 # Take a screenshot of Box of the screen or if not specified, the entire screen.
 def capture(box=None):
-    grab = pyscreenshot.grab(bbox=box)
-    return grab
+    if box:
+        tuple_in_tuple = (box[:2], box[2:])
+        print tuple_in_tuple
+        pix = autopy.bitmap.capture_screen(tuple_in_tuple)
+    else:
+        pix = autopy.bitmap.capture_screen()
+    return pix
 
 # Use the found screen to only capture that part of the screen
 def capture_screen():
@@ -167,7 +174,7 @@ def find_ball(pix):
     # If the color is found, make it part of the centroid.
     for x in range(search_box.topleft.x, search_box.botright.x):
         for y in range(search_box.topleft.y, search_box.botright.y):
-            r, g, b = pix[x,y]
+            r, g, b = get_pixel(pix, x, y)
 
             if r == 255 and g == 150 and b == 48:
                 new_p = Point(x,y)
@@ -199,7 +206,7 @@ def find_target(pix):
     # If the color is found, make it part of the centroid.
     for x in range(search_box.topleft.x, search_box.botright.x):
         for y in range(search_box.topleft.y, search_box.botright.y):
-            r, g, b = pix[x,y]
+            r, g, b = get_pixel(pix, x, y)
 
             if r == 255 and g == 38 and b == 18:
                 new_p = Point(x,y)
@@ -227,8 +234,7 @@ def sample_ball_target(samples=sample_count, delay=0):
 
     for i in range(samples):
         screen_time = time.time()
-        img = capture_screen()
-        pix = img.load()
+        pix = capture_screen()
 
         ball_pos, target_pos = get_ball_target(pix)
 
