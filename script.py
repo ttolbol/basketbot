@@ -4,6 +4,7 @@
 import sys
 import time
 import os
+import shutil
 import png
 import numpy as np
 import math
@@ -312,6 +313,11 @@ last_shot = 0
 
 counter = 0
 
+shutil.rmtree('images')
+# Create image directory
+if not os.path.exists("images"):
+    os.makedirs("images")
+
 # Tried my luck with a simplified event loop that uses the helper functions above
 while True:
     #print "(Gathering information for shot.)"
@@ -343,7 +349,7 @@ while True:
         # Skip the first iteration to get us going
         continue
 
-    if now - last_shot > 0.5:
+    if now - last_shot > 0.0:
         can_shoot = True
 
     if not can_shoot:
@@ -354,7 +360,7 @@ while True:
     #print ball_pos, prev_ball_pos
     #print target_pos, prev_target_pos
 
-    delay = 1.0
+    delay = 0.7
 
     bx  = ball_pos.x
     by  = ball_pos.y
@@ -385,18 +391,15 @@ while True:
     basket_width = scaling_factor * 280
     bw2 = basket_width / 2 
 
-    """
-    while pred_target_x+bw2 > width or pred_target_x-bw2 < 0:
-        if pred_target_x+bw2 > width:
-            print "To right"
-            a = pred_target_x + bw2 - width
-            pred_target_x -= a
+    if pred_target_x+bw2 > width:
+        print "To right"
+        a = pred_target_x + bw2 - width
+        pred_target_x -= a
 
-        if pred_target_x-bw2 < 0:
-            print "To left"
-            a = pred_target_x-bw2
-            pred_target_x += a
-    """
+    if pred_target_x-bw2 < 0:
+        print "To left"
+        a = -(pred_target_x-bw2)
+        pred_target_x += a
 
     # Calculate position in FullHD
     new_bx, new_by = scale_to_full_hd(bx,by)
