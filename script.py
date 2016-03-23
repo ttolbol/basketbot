@@ -374,17 +374,19 @@ while True:
     vx = dx/dt
 
     #print prev_target_pos.x, target_pos.x
-    #print dx
+    print "dx =", dx
 
-    if abs(dx) > 1:
+    if abs(dx) > 5:
+        vx = (440 * (dx/abs(dx))) * scaling_factor
+    elif abs(dx) > 1:
         vx = (220 * (dx/abs(dx))) * scaling_factor
     else:
         vx = 0
 
     scaled_vx = (1/scaling_factor) * vx
 
-    #print "vx = ", vx
-    #print "scaled vx = ", scaled_vx
+    print "vx =", vx
+    #print "scaled vx =", scaled_vx
 
     pred_target_x = target_pos.x + vx*delay
 
