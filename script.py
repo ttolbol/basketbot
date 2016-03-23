@@ -57,41 +57,35 @@ def find_screen():
     # Take screen shot of the entire screen and analyse it
     pix = capture()
 
-    # Find left border
-    # This scan starts from the y-mid of the screen and goes from x = 0 to max.
-    for x in xrange(10, pix.width):
-        r, g, b = get_pixel(pix, x, pix.height/2)
-        s = sum([r,g,b])
-        if s >= 243:
-            screen.topleft.x = x
+    ratio = 16.0/9
+    padding = 40
+
+    # Find bottom left corner of the screen
+    y = pix.height - padding
+    found = False
+    while not found:
+        for x in xrange(padding, pix.width/2-padding):
+            r, g, b = get_pixel(pix, x, y)
+            if r > 20:
+                found = True
+                break
+        y -= 1
+
+    bottom_left_x = x
+    bottom_left_y = y
+
+    for x in xrange(x, pix.width/2-padding):
+        r, g, b = get_pixel(pix, x, y)
+        if r < 20:
             break
 
-    # Find right border
-    # This scan starts from the y-mid of the screen and goes from x = max to 0.
-    for x in xrange(pix.width-10, 0, -1):
-        r, g, b = get_pixel(pix, x,pix.height/2)
-        s = sum([r,g,b])
-        if s >= 243:
-            screen.botright.x = x
-            break
+    screen_width = x- bottom_left_x
+    screen_height = int(round(screen_width*ratio))
 
-    # Find top border
-    # This scan starts from the x-quarter of the screen and goes from y = 0 to max.
-    for y in xrange(20, pix.height):
-        r, g, b = get_pixel(pix, pix.width/4, y)
-        s = sum([r,g,b])
-        if s >= 730: # We found the white screen
-            screen.topleft.y = y
-            break
-
-    # Find bottom border
-    # This scan starts from the x-quarter of the screen and goes from y = max to 0.
-    for y in xrange(pix.height-20, 0, -1):
-        r, g, b = get_pixel(pix, pix.width/4,y)
-        s = sum([r,g,b])
-        if s >= 730: # We found the white screen
-            screen.botright.y = y
-            break
+    screen.topleft.x = bottom_left_x
+    screen.topleft.y = bottom_left_y - screen_height
+    screen.botright.x = bottom_left_x + screen_width
+    screen.botright.y = bottom_left_y
 
     # If the found dimensions are weird (too small), we try again
 
@@ -111,8 +105,7 @@ def get_pixel(pix, x, y):
 # Take a screenshot of Box of the screen or if not specified, the entire screen.
 def capture(box=None):
     if box:
-        tuple_in_tuple = (box[:2], box[2:])
-        print tuple_in_tuple
+        tuple_in_tuple = (box.topleft.to_tuple(), box.dim())
         pix = autopy.bitmap.capture_screen(tuple_in_tuple)
     else:
         pix = autopy.bitmap.capture_screen()
@@ -120,7 +113,7 @@ def capture(box=None):
 
 # Use the found screen to only capture that part of the screen
 def capture_screen():
-    return capture(screen.to_tuple())
+    return capture(screen)
 
 # Execute a shell command
 def run_process(cmd, timeout = 60):
