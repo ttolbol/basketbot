@@ -269,6 +269,51 @@ def get_ball_target(pix):
 
 
 
+def predict_target_pos(target_pos, prev_target_pos, now, last_time):
+    delay = 1.5
+
+    #print ball_pos, prev_ball_pos
+    #print target_pos, prev_target_pos
+
+    ty  = target_pos.y
+    tx1 = prev_target_pos.x
+    tx2 = target_pos.x
+
+    dt = now - last_time
+    dx = tx2 - tx1
+    vx = dx/dt
+
+    #print prev_target_pos.x, target_pos.x
+    print "dx =", dx
+
+    if abs(dx) > 5:
+        vx = (440 * (dx/abs(dx))) * scaling_factor
+    elif abs(dx) > 1:
+        vx = (220 * (dx/abs(dx))) * scaling_factor
+    else:
+        vx = 0
+
+    print "vx =", vx
+
+    pred_target_x = target_pos.x + vx*delay
+
+    basket_width = scaling_factor * 280
+    bw2 = basket_width / 2 
+
+    print basket_width
+
+    if pred_target_x+bw2 > width:
+        print "To right"
+        pred_target_x = (width - bw2) - (pred_target_x - (width-bw2))
+
+    if pred_target_x-bw2 < 0:
+        print "To left"
+        pred_target_x = bw2-(pred_target_x - bw2)
+
+    return Point(pred_target_x, target_pos.y)
+
+
+
 # Similar to the map function in Processing
 def map_range(value, low1, high1, low2, high2):
     return low2 + (high2 - low2) * (value - low1) / (high1 - low1)
@@ -321,6 +366,7 @@ now = time.time()
 last_shot = 0
 
 counter = 0
+no_progress_counter = 0
 
 # Remove and recreate the images folder
 shutil.rmtree('images')
@@ -332,7 +378,7 @@ if save_debug_images:
     pix = capture_screen()
     pix.save("images/screen.png")
 
-# Tried my luck with a simplified event loop that uses the helper functions above
+
 while True:
     #print "(Gathering information for shot.)"
 
@@ -352,15 +398,24 @@ while True:
         pix.save("images/test%09d.png" % counter)
         counter += 1
 
+    # Try to find the ball and the target
     ball_pos, target_pos = get_ball_target(pix)
 
     if not ball_pos:
-        print "Ball was not found."
+        no_progress_counter += 1
+        if no_progress_counter > 40:
+            print "Ball was not found."
+            no_progress_counter = 0
         continue
 
     if not target_pos:
-        print "Target was not found."
+        no_progress_counter += 1
+        if no_progress_counter > 40:
+            print "Target was not found."
+            no_progress_counter = 0
         continue
+    
+    no_progress_counter = 0
 
     if not prev_ball_pos or not prev_target_pos:
         # Skip the first iteration to get us going
@@ -372,68 +427,31 @@ while True:
     if not can_shoot:
         continue
 
-    # --- Do prediction ---
-
-    #print ball_pos, prev_ball_pos
-    #print target_pos, prev_target_pos
-
-    delay = 1.5
-
-    bx  = ball_pos.x
-    by  = ball_pos.y
-
-    ty  = target_pos.y
-    tx1 = prev_target_pos.x
-    tx2 = target_pos.x
-
-    dt = now - last_time
-    dx = tx2 - tx1
-    vx = dx/dt
-
-    #print prev_target_pos.x, target_pos.x
-    print "dx =", dx
-
-    if abs(dx) > 5:
-        vx = (440 * (dx/abs(dx))) * scaling_factor
-    elif abs(dx) > 1:
-        vx = (220 * (dx/abs(dx))) * scaling_factor
-    else:
-        vx = 0
-
-    scaled_vx = (1/scaling_factor) * vx
-
-    print "vx =", vx
-    #print "scaled vx =", scaled_vx
-
-    pred_target_x = target_pos.x + vx*delay
-
-    basket_width = scaling_factor * 280
-    bw2 = basket_width / 2 
-
-    print basket_width
-
-    if pred_target_x+bw2 > width:
-        print "To right"
-        pred_target_x = (width - bw2) - (pred_target_x - (width-bw2))
-
-    if pred_target_x-bw2 < 0:
-        print "To left"
-        pred_target_x = bw2-(pred_target_x - bw2)
-
+    # Do prediction
+    pred_target = predict_target_pos(target_pos, prev_target_pos, now, last_time)
 
     # Calculate position in FullHD
-    new_bx, new_by = scale_to_full_hd(bx,by)
-    new_tx, new_ty = scale_to_full_hd(pred_target_x,ty)
+    new_bx, new_by = scale_to_full_hd(ball_pos.x, ball_pos.y)
+    new_tx, new_ty = scale_to_full_hd(pred_target.x, pred_target.y)
 
     print "Shoot!"
 
     run_adb("shell input swipe %d %d %d %d" % (new_bx, new_by, new_tx, new_ty))
 
-    #time.sleep(time_until_next_shot)
     can_shoot = False
     last_shot = time.time()
 
     print # Just a newline
+
+
+
+
+
+
+
+
+
+
 
 # Stop here, so we can't enter the loop below.
 sys.exit(1)
