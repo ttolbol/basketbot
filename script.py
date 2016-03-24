@@ -13,7 +13,8 @@ import subprocess
 from geometry import *
 import autopy
 
-# Constants
+# --- Constants ---
+
 lag = 1.1
 
 #adbpath = "/home/thomas/Android/Sdk/platform-tools/adb"
@@ -23,7 +24,14 @@ countdown_seconds = 0
 
 sample_count = 2
 
-time_until_next_shot = 1.3
+time_until_next_shot = 0.5
+
+# The streamed screens actual properties
+screen_resolution = Point(1080, 1920)
+screen_aspect_ratio = float(screen_resolution.y)/screen_resolution.x # 16.0/9
+
+save_debug_images = True
+
 
 # Init the screen to just 0's
 # (A box has a topleft point and a bottom right point)
@@ -59,17 +67,17 @@ def find_screen():
 
     # Make a countdown so the user can set stream viewer in fullscreen.
 
-    print "Fullscreen the viewer. Starting in %d seconds..." % countdown_seconds
+    if countdown_seconds:
+        print "Fullscreen the viewer. Starting in %d seconds..." % countdown_seconds
     for i in xrange(countdown_seconds, 0, -1):
         print i
         time.sleep(1)
     print "Finding screen..."
     print
 
-    # Take screen shot of the entire screen and analyse it
+    # Take screenshot of the entire screen and analyse it
     pix = capture()
 
-    ratio = 16.0/9
     padding = 40
 
     # Find bottom left corner of the screen
@@ -91,8 +99,8 @@ def find_screen():
         if r < 20:
             break
 
-    screen_width = x- bottom_left_x
-    screen_height = int(round(screen_width*ratio))
+    screen_width = x - bottom_left_x
+    screen_height = int(round(screen_width*screen_aspect_ratio))
 
     screen.topleft.x = bottom_left_x
     screen.topleft.y = bottom_left_y - screen_height
@@ -101,7 +109,12 @@ def find_screen():
 
     # If the found dimensions are weird (too small), we try again
 
-    if screen.width() < 50:
+    if screen.topleft.y < 0:
+        print "Negative value for screen.topleft.y. Try again."
+        find_screen()
+        return
+
+    if screen.width() < 200:
         print "Very small width of screen. Try again."
         find_screen()
         return
@@ -169,7 +182,7 @@ def find_ball(pix):
     width, height = screen.dim()
 
     p = 1764.0/1920
-    approx_y = screen.topleft.y + int(round(height*p))
+    approx_y = int(round(height*p))
 
     # We will only search inside this
     search_box = Box(Point(0,approx_y), Point(width, approx_y+1))
@@ -299,6 +312,9 @@ else:
 # If this doesn't work, simply comment this out and hardcode the approximate location.
 find_screen()
 
+print "Found screen:", screen
+print
+
 width, height = screen.dim()
 
 can_shoot = False
@@ -313,10 +329,15 @@ last_shot = 0
 
 counter = 0
 
+# Remove and recreate the images folder
 shutil.rmtree('images')
-# Create image directory
 if not os.path.exists("images"):
     os.makedirs("images")
+
+if save_debug_images:
+    # Save an image of the screen for debugging
+    pix = capture_screen()
+    pix.save("images/screen.png")
 
 # Tried my luck with a simplified event loop that uses the helper functions above
 while True:
@@ -331,9 +352,10 @@ while True:
 
     pix = capture_screen()
 
-    # Save each screenshot to file
-    pix.save("images/test%09d.png" % counter)
-    counter += 1
+    if save_debug_images:
+        # Save each screenshot to file
+        pix.save("images/test%09d.png" % counter)
+        counter += 1
 
     ball_pos, target_pos = get_ball_target(pix)
 
@@ -349,7 +371,7 @@ while True:
         # Skip the first iteration to get us going
         continue
 
-    if now - last_shot > 0.0:
+    if now - last_shot > time_until_next_shot:
         can_shoot = True
 
     if not can_shoot:
