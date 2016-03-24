@@ -23,12 +23,13 @@ countdown_seconds = 0
 sample_count = 2
 
 time_until_next_shot = 0.5
+time_until_next_screenshot = 0
 
 # The streamed screens actual properties
 screen_resolution = Point(1080, 1920)
 screen_aspect_ratio = float(screen_resolution.y)/screen_resolution.x # 16.0/9
 
-save_debug_images = True
+save_debug_images = False
 
 
 # Init the screen to just 0's
@@ -323,7 +324,8 @@ ball_pos   = None
 target_pos = None
 
 now = time.time()
-last_shot = 0
+last_shot_time = 0
+last_screenshot_time = 0
 
 counter = 0
 no_progress_counter = 0
@@ -341,6 +343,10 @@ if save_debug_images:
 
 # Main event loop
 while True:
+    # FPS limit on screenshots taken
+    if time.time() - last_screenshot_time < time_until_next_screenshot:
+        continue
+
     # Update values between iterations
     last_time = now
     now       = time.time()
@@ -351,6 +357,7 @@ while True:
     # Take screenshot of part of the screen where the stream is
     # After this point, the coordinates for pix is relative to the stream.
     pix = capture_screen()
+    last_screenshot_time = time.time()
 
     if save_debug_images:
         # Save each screenshot to file
@@ -380,7 +387,7 @@ while True:
         # Skip the first iteration to get us going
         continue
 
-    if now - last_shot > time_until_next_shot:
+    if now - last_shot_time > time_until_next_shot:
         can_shoot = True
 
     if not can_shoot:
@@ -398,6 +405,6 @@ while True:
     run_adb("shell input swipe %d %d %d %d" % (new_bx, new_by, new_tx, new_ty))
 
     can_shoot = False
-    last_shot = time.time()
+    last_shot_time = time.time()
 
     print # Just a newline
