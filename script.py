@@ -345,6 +345,9 @@ if save_debug_images:
 while True:
     # FPS limit on screenshots taken
     if time.time() - last_screenshot_time < time_until_next_screenshot:
+        # Don't run in infinite loop as fast as you can,
+        # but instead try to sleep until we know that actually can take a screenshot.
+        time.sleep(time.time() - last_screenshot_time)
         continue
 
     # Update values between iterations
