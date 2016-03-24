@@ -3,15 +3,13 @@
 # Imports the monkeyrunner modules used by this program
 import sys
 import time
-import os
-import shutil
 import png
 import numpy as np
 import math
 from PIL import Image
-import subprocess
-from geometry import *
 import autopy
+from geometry import *
+from util import *
 
 # --- Constants ---
 
@@ -37,27 +35,6 @@ save_debug_images = True
 # (A box has a topleft point and a bottom right point)
 screen = Box(Point(0,0), Point(0,0))
 
-# A snapshot of the current scene
-# It has a ball point, a target point and a timestamp since we started the current sampling
-class Snapshot:
-    def __init__(self, ball_pos, target_pos, timestamp):
-        self.ball_pos = ball_pos
-        self.target_pos = target_pos
-        self.timestamp = timestamp
-
-    def __str__(self):
-        return "%s, %s, %s" % (self.ball_pos, self.target_pos, self.timestamp)
-
-    def __repr__(self):
-        return str(self)
-
-def color_distance(c1, c2):
-    rdif = abs(c1[0]-c2[0])
-    gdif = abs(c1[1]-c2[1])
-    bdif = abs(c1[2]-c2[2])
-    dist = rdif*rdif+gdif*gdif+bdif*bdif
-    dist = math.sqrt(dist)
-    return dist
 
 
 # Locate the phone stream on the screen
@@ -139,36 +116,6 @@ def capture(box=None):
 # Use the found screen to only capture that part of the screen
 def capture_screen():
     return capture(screen)
-
-# Execute a shell command
-def run_process(cmd, timeout = 60):
-    start_time = time.clock()
-
-    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE)
-
-    stdout_output = ""
-    stderr_output = ""
-
-    did_timeout = False
-
-    # Keep asking if the process has ended
-    # and every time, store the new stdout and stderr output to strings.
-    while True:
-        retcode = p.poll() #returns None while subprocess is running
-        stdout_line = p.stdout.read()
-        stdout_output += stdout_line.decode("ascii")
-        stderr_line = p.stderr.read()
-        stderr_output += stderr_line.decode("ascii")
-        elapsed_time = time.clock() - start_time
-        if retcode is not None:
-            break
-        elif elapsed_time >= timeout:
-            p.terminate()
-            did_timeout = True
-            break
-
-    return (stdout_output.strip(), stderr_output.strip(), retcode, elapsed_time, did_timeout)
 
 # Run ADB with some command
 def run_adb(command):
@@ -313,11 +260,6 @@ def predict_target_pos(target_pos, prev_target_pos, now, last_time):
     return Point(pred_target_x, target_pos.y)
 
 
-
-# Similar to the map function in Processing
-def map_range(value, low1, high1, low2, high2):
-    return low2 + (high2 - low2) * (value - low1) / (high1 - low1)
-
 # Use the map_range to scale coordinates to FullHD
 def scale_to_full_hd(x, y, small_width=None, small_height=None, big_width=1080, big_height=1920):
     if small_width is None:
@@ -368,20 +310,19 @@ last_shot = 0
 counter = 0
 no_progress_counter = 0
 
-# Remove and recreate the images folder
-shutil.rmtree('images')
-if not os.path.exists("images"):
-    os.makedirs("images")
+
 
 if save_debug_images:
+    # Remove and recreate the images folder
+    reset_image_folder()
+
     # Save an image of the screen for debugging
-    pix = capture_screen()
-    pix.save("images/screen.png")
+    pix_debug = capture_screen()
+    pix_debug.save("images/screen.png")
 
 
+# Main event loop
 while True:
-    #print "(Gathering information for shot.)"
-
     # Update values between iterations
     last_time = now
     now       = time.time()

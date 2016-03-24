@@ -123,3 +123,20 @@ class Box:
 
     def clone(self):
         return Box(self.topleft.clone(), self.botright.clone())
+
+
+
+
+# A snapshot of the current scene
+# It has a ball point, a target point and a timestamp since we started the current sampling
+class Snapshot:
+    def __init__(self, ball_pos, target_pos, timestamp):
+        self.ball_pos = ball_pos
+        self.target_pos = target_pos
+        self.timestamp = timestamp
+
+    def __str__(self):
+        return "%s, %s, %s" % (self.ball_pos, self.target_pos, self.timestamp)
+
+    def __repr__(self):
+        return str(self)
