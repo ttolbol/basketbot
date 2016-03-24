@@ -124,6 +124,7 @@ def run_adb(command):
 
 
 
+# Find location on screen based on percentage
 def percent_height(p):
     _, height = screen.dim()
     return int(round(height*p))
@@ -131,6 +132,9 @@ def percent_height(p):
 def percent_width(p):
     width, _ = screen.dim()
     return int(round(width*p))
+
+def percent_pos(x,y):
+    return percent_width(x), percent_height(y)
 
 
 
@@ -140,6 +144,7 @@ def percent_width(p):
 def find_ball(pix):
     width, height = screen.dim()
 
+    # Percentage position from top of ball
     p = 0.92875
     approx_y = percent_height(p)
 
@@ -180,13 +185,14 @@ def find_target(pix):
 
     target_color = (255, 39, 18)
 
+    # Percentage position from top of target
     p = 0.3867403
     approx_y = int(round(height*p))
 
     # We will only search inside this
     search_box = Box(Point(0,approx_y-10), Point(width, approx_y+10))
 
-    if save_debug_images:
+    if save_debug_images and False:
         pix_debug = capture(search_box + screen.topleft)
         pix_debug.save("images/target-search.png")
 
