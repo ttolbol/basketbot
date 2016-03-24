@@ -235,7 +235,7 @@ def predict_target_pos(ball_pos, target_pos, prev_target_pos, now, last_time):
     # The overall delay sums to ~1.5
     delay = ball_delay + 0.87
 
-    #delay = 1.5
+    delay = 1.5
 
     #print ball_pos, prev_ball_pos
     #print target_pos, prev_target_pos
