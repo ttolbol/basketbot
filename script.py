@@ -176,16 +176,32 @@ def run_adb(command):
     return stdout + stderr
 
 
+
+def percent_height(p):
+    _, height = screen.dim()
+    return int(round(height*p))
+
+def percent_width(p):
+    width, _ = screen.dim()
+    return int(round(width*p))
+
+
+
+
 # Find the ball on the screen
 # Takes pixels, return the x,y position of the ball
 def find_ball(pix):
     width, height = screen.dim()
 
-    p = 1764.0/1920
-    approx_y = int(round(height*p))
+    p = 0.92875
+    approx_y = percent_height(p)
 
     # We will only search inside this
     search_box = Box(Point(0,approx_y), Point(width, approx_y+1))
+
+    if save_debug_images and False:
+        pix_debug = capture(search_box + screen.topleft)
+        pix_debug.save("images/ball-search.png")
 
     # The average of all the points that we are looking for.
     centroid = Point(0,0)
@@ -217,11 +233,15 @@ def find_target(pix):
 
     target_color = (255, 39, 18)
 
-    p = 734.0/1920
-    approx_y = screen.topleft.y + int(round(height*p))
+    p = 0.3867403
+    approx_y = int(round(height*p))
 
     # We will only search inside this
-    search_box = Box(Point(0,approx_y-20), Point(width, approx_y))
+    search_box = Box(Point(0,approx_y-10), Point(width, approx_y+10))
+
+    if save_debug_images:
+        pix_debug = capture(search_box + screen.topleft)
+        pix_debug.save("images/target-search.png")
 
     # The average of all the points that we are looking for.
     centroid = Point(0,0)
@@ -247,33 +267,6 @@ def find_target(pix):
 def get_ball_target(pix):
     return (find_ball(pix), find_target(pix))
 
-# Take snapshots of the scene and return a list of them
-def sample_ball_target(samples=sample_count, delay=0):
-    l = []
-
-    start_time = time.time()
-
-    for i in range(samples):
-        screen_time = time.time()
-        pix = capture_screen()
-
-        ball_pos, target_pos = get_ball_target(pix)
-
-        if not ball_pos:
-            return
-
-        if not target_pos:
-            return
-
-        snapshot = Snapshot(ball_pos, target_pos, screen_time - start_time)
-        print "Snapshot %d: %s" % (i+1, snapshot)
-
-        l.append(snapshot)
-
-        if delay:
-            time.sleep(delay)
-
-    return l
 
 
 # Similar to the map function in Processing
@@ -319,7 +312,7 @@ width, height = screen.dim()
 
 can_shoot = False
 
-scaling_factor = width/1080.0
+scaling_factor = float(width)/screen_resolution.x
 
 ball_pos   = None
 target_pos = None
@@ -350,6 +343,8 @@ while True:
     prev_ball_pos   = ball_pos
     prev_target_pos = target_pos
 
+    # Take screenshot of part of the screen where the stream is
+    # After this point, the coordinates for pix is relative to the stream.
     pix = capture_screen()
 
     if save_debug_images:
@@ -360,11 +355,11 @@ while True:
     ball_pos, target_pos = get_ball_target(pix)
 
     if not ball_pos:
-        #print "Ball was not found."
+        print "Ball was not found."
         continue
 
     if not target_pos:
-        #print "Target was not found."
+        print "Target was not found."
         continue
 
     if not prev_ball_pos or not prev_target_pos:
@@ -426,12 +421,6 @@ while True:
         pred_target_x = bw2-(pred_target_x - bw2)
 
 
-    while tx2 > 940 or tx2 < 140:
-        if tx2 > 940:
-            tx2 = 940-(tx2-940)
-
-        if tx2 < 140:
-            tx2 = 140-(tx2-140)
     # Calculate position in FullHD
     new_bx, new_by = scale_to_full_hd(bx,by)
     new_tx, new_ty = scale_to_full_hd(pred_target_x,ty)

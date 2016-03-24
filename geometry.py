@@ -99,3 +99,27 @@ class Box:
 
     def __repr__(self):
         return "Box(%s, %s)" % (self.topleft, self.botright)
+
+    def __add__(self, other):
+        if isinstance(other, Point):
+            return Box(self.topleft + other, self.botright + other)
+        elif isinstance(other, Box):
+            return Box(self.topleft + other.topleft, self.botright + other.botright)
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __mul__(self, t):
+        return Box(self.topleft * t, self.botright * t)
+
+    def __div__(self, t):
+        return Box(self.topleft / t, self.botright / t)
+
+    def __pos__(self):
+        return self.clone()
+
+    def __neg__(self):
+        return self * (-1)
+
+    def clone(self):
+        return Box(self.topleft.clone(), self.botright.clone())
