@@ -222,8 +222,20 @@ def get_ball_target(pix):
 
 
 
-def predict_target_pos(target_pos, prev_target_pos, now, last_time):
-    delay = 1.5
+def predict_target_pos(ball_pos, target_pos, prev_target_pos, now, last_time):
+    # The ball is measured to travel the following percentage over the following time
+    ball_speed = (407.0/height)/0.8
+
+    # Calculate the distance percentage from ball to target
+    dist_to_target = (target_pos - ball_pos).length()/height
+
+    # The delay of the ball should then be
+    ball_delay =  ball_speed * dist_to_target
+
+    # The overall delay sums to ~1.5
+    delay = ball_delay + 0.87
+
+    #delay = 1.5
 
     #print ball_pos, prev_ball_pos
     #print target_pos, prev_target_pos
@@ -375,7 +387,7 @@ while True:
         continue
 
     # Do prediction
-    pred_target = predict_target_pos(target_pos, prev_target_pos, now, last_time)
+    pred_target = predict_target_pos(ball_pos, target_pos, prev_target_pos, now, last_time)
 
     # Calculate position in FullHD
     new_bx, new_by = scale_to_full_hd(ball_pos.x, ball_pos.y)
