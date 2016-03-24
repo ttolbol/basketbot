@@ -23,7 +23,7 @@ countdown_seconds = 0
 sample_count = 2
 
 time_until_next_shot = 0.5
-time_until_next_screenshot = 0
+time_until_next_screenshot = 1.0/7
 
 # The streamed screens actual properties
 screen_resolution = Point(1080, 1920)
@@ -236,7 +236,8 @@ def predict_target_pos(ball_pos, target_pos, prev_target_pos, now, last_time):
     # The overall delay sums to ~1.5
     delay = ball_delay + 0.87
 
-    delay = 1.5
+    # Ignore calculated delay
+    delay = 0.81
 
     #print ball_pos, prev_ball_pos
     #print target_pos, prev_target_pos
@@ -265,8 +266,6 @@ def predict_target_pos(ball_pos, target_pos, prev_target_pos, now, last_time):
 
     basket_width = scaling_factor * 280
     bw2 = basket_width / 2 
-
-    print basket_width
 
     if pred_target_x+bw2 > width:
         print "To right"
